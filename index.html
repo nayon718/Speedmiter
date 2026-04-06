@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>SpeedLive | Advanced Real Speed Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f0f9ff 0%, #e0eefc 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        /* Header — edge to edge, no radius */
+        .header {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(4px);
+            padding: 1rem 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1e40af, #f97316);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+        .logo i {
+            background: none;
+            color: #f97316;
+            margin-right: 6px;
+        }
+        .ip-badge {
+            background: #eef2ff;
+            padding: 0.3rem 1rem;
+            font-family: monospace;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #1e40af;
+        }
+
+        /* Main content — fills space */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 1rem 1rem;
+        }
+
+        /* gauge */
+        .gauge-container {
+            display: flex;
+            justify-content: center;
+            margin: 0.5rem 0 0.2rem;
+            position: relative;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+            background: transparent;
+        }
+        .speed-value-center {
+            position: absolute;
+            top: 58%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+        }
+        .download-number {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1;
+        }
+        .download-unit {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #f97316;
+        }
+        .speed-label-under {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* main metrics */
+        .metrics {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 1rem 0 1rem;
+            flex-wrap: wrap;
+        }
+        .metric-card {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 0.6rem 1.2rem;
+            text-align: center;
+            min-width: 130px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+        .metric-icon {
+            font-size: 1.3rem;
+            color: #3b82f6;
+        }
+        .metric-title {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #64748b;
+            margin: 4px 0;
+        }
+        .metric-value {
+            font-size: 1.7rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .metric-unit {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #f97316;
+        }
+
+        /* New: Network Quality row (jitter + stability) */
+        .quality-row {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 0.5rem 0 1rem;
+            flex-wrap: wrap;
+        }
+        .quality-card {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 0.5rem 1.2rem;
+            text-align: center;
+            min-width: 140px;
+        }
+        .quality-icon {
+            font-size: 1.2rem;
+            color: #f97316;
+        }
+        .quality-title {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #64748b;
+            margin: 3px 0;
+        }
+        .quality-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .quality-unit {
+            font-size: 0.7rem;
+            color: #f97316;
+        }
+        .stability-badge {
+            display: inline-block;
+            background: #eef2ff;
+            padding: 0.2rem 0.7rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* button */
+        .action {
+            display: flex;
+            justify-content: center;
+            margin: 0.5rem 0 0.5rem;
+        }
+        .test-btn {
+            background: linear-gradient(105deg, #f97316, #ea580c);
+            border: none;
+            padding: 0.75rem 2rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 6px 14px -6px #f97316a0;
+        }
+        .test-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .test-btn:hover:not(:disabled) {
+            background: linear-gradient(105deg, #ea580c, #c2410c);
+            transform: scale(0.99);
+        }
+
+        /* progress & status */
+        .progress-area {
+            margin: 0.5rem 0 0.3rem;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #f97316);
+            transition: width 0.2s ease;
+        }
+        .status {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #475569;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        .spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid #f97316;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error-box {
+            background: #fff1f0;
+            border-left: 4px solid #f97316;
+            padding: 0.5rem 0.8rem;
+            font-size: 0.7rem;
+            margin-top: 0.6rem;
+            color: #b91c1c;
+        }
+
+        /* footer */
+        .footer {
+            text-align: center;
+            font-size: 0.65rem;
+            color: #6c7a9e;
+            padding: 0.8rem 1rem;
+            background: rgba(255, 255, 255, 0.6);
+            border-top: 1px solid rgba(0,0,0,0.03);
+        }
+        .footer strong {
+            color: #f97316;
+        }
+
+        /* no border-radius anywhere */
+        .header, .metric-card, .quality-card, .test-btn, .progress-bar, .error-box, .footer {
+            border-radius: 0px;
+        }
+        canvas, button {
+            border-radius: 0px;
+        }
+    </style>
+    <link rel="icon" type="image/png" href="speedometer.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <div class="logo"><i class="fas fa-bolt"></i> Speed<span style="color:#f97316;">Live</span></div>
+        <div class="ip-badge" id="headerIp"><i class="fas fa-globe"></i> detecting...</div>
+    </div>
+
+    <div class="main-content">
+        <!-- Speedometer -->
+        <div class="gauge-container">
+            <canvas id="speedCanvas" width="400" height="220" style="width:100%; height:auto; max-width:400px"></canvas>
+            <div class="speed-value-center">
+                <div><span id="gaugeDownloadValue" class="download-number">—</span><span class="download-unit">Mbps</span></div>
+                <div class="speed-label-under">LIVE DOWNLOAD</div>
+            </div>
+        </div>
+
+        <!-- Main Metrics -->
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="fas fa-arrow-up"></i></div>
+                <div class="metric-title">UPLOAD SPEED</div>
+                <div class="metric-value"><span id="uploadVal">—</span><span class="metric-unit">Mbps</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon"><i class="fas fa-tachometer-alt"></i></div>
+                <div class="metric-title">LATENCY</div>
+                <div class="metric-value"><span id="pingVal">—</span><span class="metric-unit">ms</span></div>
+            </div>
+        </div>
+
+        <!-- NEW: Network Quality (Jitter + Stability) -->
+        <div class="quality-row">
+            <div class="quality-card">
+                <div class="quality-icon"><i class="fas fa-waveform"></i></div>
+                <div class="quality-title">JITTER</div>
+                <div class="quality-value"><span id="jitterVal">—</span><span class="quality-unit">ms</span></div>
+                <div class="stability-badge" id="stabilityBadge">—</div>
+            </div>
+            <div class="quality-card">
+                <div class="quality-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="quality-title">STABILITY SCORE</div>
+                <div class="quality-value"><span id="stabilityScore">—</span><span class="quality-unit">%</span></div>
+                <div class="stability-badge" id="stabilityLabel">measuring</div>
+            </div>
+        </div>
+
+        <div class="action">
+            <button id="testBtn" class="test-btn"><i class="fas fa-play"></i> TEST AGAIN</button>
+        </div>
+
+        <div class="progress-area">
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="status" id="statusMsg"><i class="fas fa-info-circle"></i> Ready — click TEST AGAIN</div>
+        </div>
+        <div id="errorBox" class="error-box" style="display: none;"></div>
+    </div>
+
+    <div class="footer">
+        ⚡ Real‑time needle (10 Mbps steps, max 250) • Jitter & stability from live pings • <strong>Powered By NAYON</strong>
+    </div>
+</div>
+
+<script>
+    // ---------- DOM elements ----------
+    const canvas = document.getElementById('speedCanvas');
+    const ctx = canvas.getContext('2d');
+    const gaugeSpan = document.getElementById('gaugeDownloadValue');
+    const uploadSpan = document.getElementById('uploadVal');
+    const pingSpan = document.getElementById('pingVal');
+    const jitterSpan = document.getElementById('jitterVal');
+    const stabilityScoreSpan = document.getElementById('stabilityScore');
+    const stabilityBadgeSpan = document.getElementById('stabilityBadge');
+    const testBtn = document.getElementById('testBtn');
+    const progressFill = document.getElementById('progressFill');
+    const statusDiv = document.getElementById('statusMsg');
+    const errorBox = document.getElementById('errorBox');
+    const headerIpSpan = document.getElementById('headerIp');
+
+    // ---------- Gauge setup (max 250 Mbps, ticks every 10) ----------
+    let width = 400, height = 220;
+    let centerX = width/2, centerY = height - 20;
+    let radius = 160;
+    let startAngle = Math.PI, endAngle = 0;
+    let maxSpeed = 250;
+
+    let currentNeedleDeg = 0;
+    let targetNeedleDeg = 0;
+    let animFrame = null;
+
+    function drawGaugeBackground() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle, false);
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.lineWidth = 22;
+        ctx.stroke();
+        
+        for (let speed = 0; speed <= maxSpeed; speed += 10) {
+            let fraction = speed / maxSpeed;
+            let angle = startAngle + fraction * Math.PI;
+            let isMajor = (speed % 20 === 0);
+            let tickLength = isMajor ? 12 : 6;
+            let x1 = centerX + (radius - tickLength) * Math.cos(angle);
+            let y1 = centerY + (radius - tickLength) * Math.sin(angle);
+            let x2 = centerX + (radius + 3) * Math.cos(angle);
+            let y2 = centerY + (radius + 3) * Math.sin(angle);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = isMajor ? "#64748b" : "#94a3b8";
+            ctx.lineWidth = isMajor ? 2 : 1.2;
+            ctx.stroke();
+            
+            if (isMajor || speed === maxSpeed) {
+                let labelX = centerX + (radius + 18) * Math.cos(angle);
+                let labelY = centerY + (radius + 18) * Math.sin(angle);
+                ctx.font = "bold 10px 'Inter'";
+                ctx.fillStyle = "#475569";
+                ctx.fillText(speed.toString(), labelX - 6, labelY + 4);
+            }
+        }
+        ctx.font = "bold 10px 'Inter'";
+        ctx.fillStyle = "#f97316";
+        ctx.fillText("0", centerX - radius - 5, centerY + 6);
+        ctx.fillText(maxSpeed+"+", centerX + radius - 25, centerY + 6);
+        
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 16, 0, 2*Math.PI);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.strokeStyle = "#cbd5e1";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    function drawNeedle(deg) {
+        let angleRad = startAngle + (deg/180)*Math.PI;
+        let len = radius - 28;
+        let headX = centerX + len*Math.cos(angleRad);
+        let headY = centerY + len*Math.sin(angleRad);
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(headX, headY);
+        ctx.strokeStyle = "#f97316";
+        ctx.lineWidth = 4;
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = "rgba(0,0,0,0.2)";
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 8, 0, 2*Math.PI);
+        ctx.fillStyle = "#f97316";
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    function animateNeedleTo(targetDeg) {
+        targetNeedleDeg = Math.min(180, Math.max(0, targetDeg));
+        function step() {
+            let diff = targetNeedleDeg - currentNeedleDeg;
+            if (Math.abs(diff) < 0.3) {
+                currentNeedleDeg = targetNeedleDeg;
+                drawGaugeBackground();
+                drawNeedle(currentNeedleDeg);
+                if (animFrame) cancelAnimationFrame(animFrame);
+                animFrame = null;
+                return;
+            }
+            currentNeedleDeg += diff * 0.15;
+            drawGaugeBackground();
+            drawNeedle(currentNeedleDeg);
+            animFrame = requestAnimationFrame(step);
+        }
+        if (animFrame) cancelAnimationFrame(animFrame);
+        step();
+    }
+
+    function setNeedleImmediate(speedMbps) {
+        let deg = Math.min(180, (speedMbps / maxSpeed) * 180);
+        deg = Math.max(0, deg);
+        currentNeedleDeg = deg;
+        targetNeedleDeg = deg;
+        drawGaugeBackground();
+        drawNeedle(currentNeedleDeg);
+    }
+
+    function updateLiveSpeed(speedMbps) {
+        let displayVal = (speedMbps >= 0) ? speedMbps.toFixed(1) : '—';
+        gaugeSpan.innerText = displayVal === '—' ? '—' : displayVal;
+        let deg = Math.min(180, (speedMbps / maxSpeed) * 180);
+        deg = Math.max(0, deg);
+        animateNeedleTo(deg);
+    }
+
+    // ---------- Helpers ----------
+    function setProgress(percent) { progressFill.style.width = `${Math.min(100, Math.max(0, percent))}%`; }
+    function setStatus(text, isLoading = false, isError = false) {
+        if (isError) statusDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${text}`;
+        else if (isLoading) statusDiv.innerHTML = `<div class="spinner"></div> ${text}`;
+        else statusDiv.innerHTML = `<i class="fas fa-chart-line"></i> ${text}`;
+    }
+    function showError(msg) { errorBox.style.display = 'block'; errorBox.innerHTML = `<i class="fas fa-bug"></i> ${msg}`; setTimeout(() => errorBox.style.display = 'none', 6000); }
+    function hideError() { errorBox.style.display = 'none'; }
+    function resetUI() {
+        gaugeSpan.innerText = '—';
+        uploadSpan.innerText = '—';
+        pingSpan.innerText = '—';
+        jitterSpan.innerText = '—';
+        stabilityScoreSpan.innerText = '—';
+        stabilityBadgeSpan.innerText = '—';
+        setNeedleImmediate(0);
+        setProgress(0);
+        hideError();
+    }
+
+    // Fetch public IP for header
+    async function fetchIP() {
+        try {
+            const res = await fetch('https://api.ipify.org?format=json');
+            const data = await res.json();
+            headerIpSpan.innerHTML = `<i class="fas fa-globe"></i> ${data.ip}`;
+        } catch(e) {
+            headerIpSpan.innerHTML = `<i class="fas fa-globe"></i> local`;
+        }
+    }
+
+    // ---------- Enhanced latency with jitter (multiple samples) ----------
+    async function measureLatencyAndJitter(signal) {
+        const endpoints = ['https://speed.cloudflare.com/__down?bytes=1', 'https://httpbin.org/get'];
+        let samples = [];
+        // collect 6 ping samples for accurate jitter
+        for (let i = 0; i < 6; i++) {
+            if (signal?.aborted) throw new Error('aborted');
+            let bestSample = null;
+            for (let url of endpoints) {
+                try {
+                    const start = performance.now();
+                    const res = await fetch(url, { method: 'HEAD', cache: 'no-store', signal });
+                    if (!res.ok) throw new Error();
+                    const latency = performance.now() - start;
+                    if (bestSample === null || latency < bestSample) bestSample = latency;
+                } catch(e) {}
+            }
+            if (bestSample !== null) samples.push(bestSample);
+            await new Promise(r => setTimeout(r, 100));
+        }
+        if (samples.length < 3) throw new Error('Could not measure latency');
+        // calculate average and jitter (mean absolute deviation)
+        const avg = samples.reduce((a,b) => a+b, 0) / samples.length;
+        const deviations = samples.map(s => Math.abs(s - avg));
+        const jitter = deviations.reduce((a,b) => a+b, 0) / deviations.length;
+        // stability score: 100% - (jitter/avg)*100, capped between 0-100
+        let stability = 100 - (jitter / avg) * 100;
+        stability = Math.min(100, Math.max(0, Math.round(stability)));
+        return { avgLatency: Math.round(avg), jitter: Math.round(jitter * 10) / 10, stability };
+    }
+
+    // ---------- Real download (40MB) with live needle ----------
+    async function measureDownloadLive(signal, onSpeedUpdate, onComplete) {
+        const DOWNLOAD_URL = `https://speed.cloudflare.com/__down?bytes=${40 * 1024 * 1024}&_=${Date.now()}`;
+        const response = await fetch(DOWNLOAD_URL, { cache: 'no-store', signal });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const reader = response.body.getReader();
+        let receivedBytes = 0;
+        let startTime = performance.now();
+        let lastUpdateTime = startTime;
+        let lastBytes = 0;
+        
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (signal?.aborted) throw new Error('aborted');
+            receivedBytes += value.length;
+            const now = performance.now();
+            const timeDiff = (now - lastUpdateTime) / 1000;
+            if (timeDiff >= 0.15) {
+                const bytesDiff = receivedBytes - lastBytes;
+                const instantSpeed = (bytesDiff * 8) / (timeDiff * 1e6);
+                if (!isNaN(instantSpeed) && instantSpeed > 0) onSpeedUpdate(instantSpeed);
+                lastUpdateTime = now;
+                lastBytes = receivedBytes;
+            }
+        }
+        const totalDuration = (performance.now() - startTime) / 1000;
+        const avgSpeed = (receivedBytes * 8) / (totalDuration * 1e6);
+        onSpeedUpdate(avgSpeed);
+        onComplete(parseFloat(avgSpeed.toFixed(2)));
+        return avgSpeed;
+    }
+
+    // ---------- Upload (8MB) ----------
+    async function measureUpload(signal, onProgress) {
+        const size = 8 * 1024 * 1024;
+        const payload = new Uint8Array(size);
+        for (let i=0;i<size;i+=16384) payload.fill(Math.floor(Math.random()*255), i, Math.min(i+16384, size));
+        const blob = new Blob([payload], { type: 'application/octet-stream' });
+        const endpoints = ['https://speed.cloudflare.com/__up', 'https://httpbin.org/post'];
+        for (let url of endpoints) {
+            if (signal?.aborted) throw new Error('aborted');
+            try {
+                const speed = await performUpload(url, blob, signal, onProgress);
+                return speed;
+            } catch(e) { if (e.name === 'AbortError') throw e; }
+        }
+        throw new Error('Upload failed');
+    }
+
+    function performUpload(url, blob, signal, onProgress) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            let start=0, end=0;
+            const abortHandler = () => { if (xhr.readyState !== 4) { xhr.abort(); reject(new Error('Aborted')); } };
+            if (signal) signal.addEventListener('abort', abortHandler, { once: true });
+            xhr.open('POST', url, true);
+            xhr.setRequestHeader('Cache-Control', 'no-cache');
+            xhr.upload.onloadstart = () => { start = performance.now(); if(onProgress) onProgress(0); };
+            xhr.upload.onprogress = (e) => { if(e.lengthComputable && onProgress) onProgress((e.loaded/e.total)*100); };
+            xhr.upload.onloadend = () => { end = performance.now(); };
+            xhr.onload = () => {
+                if(signal) signal.removeEventListener('abort', abortHandler);
+                if (xhr.status >= 200 && xhr.status < 300 && start>0 && end>start) {
+                    const speed = (blob.size * 8) / ((end-start)/1000) / 1e6;
+                    resolve(parseFloat(speed.toFixed(2)));
+                } else reject(new Error('Upload error'));
+            };
+            xhr.onerror = () => reject(new Error('Network error'));
+            xhr.onabort = () => reject(new Error('Aborted'));
+            xhr.send(blob);
+        });
+    }
+
+    // ---------- Main test sequence ----------
+    let isTesting = false;
+    let activeAbort = null;
+    let activeUploadXHR = null;
+
+    function abortCurrent() {
+        if (activeAbort) { activeAbort.abort(); activeAbort = null; }
+        if (activeUploadXHR) { activeUploadXHR.abort(); activeUploadXHR = null; }
+    }
+
+    async function runFullTest() {
+        if (isTesting) return;
+        isTesting = true;
+        resetUI();
+        testBtn.disabled = true;
+        setProgress(2);
+        setStatus("Initializing advanced test...", true);
+        hideError();
+        abortCurrent();
+        activeAbort = new AbortController();
+        const signal = activeAbort.signal;
+        let latencyAvg = null, jitterVal = null, stability = null;
+        let finalDownload = null, uploadMbps = null;
+
+        try {
+            // 1. Latency + Jitter + Stability
+            setStatus("Measuring latency & jitter (6 samples)...", true);
+            setProgress(5);
+            const latencyData = await measureLatencyAndJitter(signal);
+            latencyAvg = latencyData.avgLatency;
+            jitterVal = latencyData.jitter;
+            stability = latencyData.stability;
+            pingSpan.innerText = latencyAvg;
+            jitterSpan.innerText = jitterVal;
+            stabilityScoreSpan.innerText = stability;
+            let stabilityText = stability >= 80 ? "Excellent" : (stability >= 60 ? "Good" : (stability >= 40 ? "Fair" : "Poor"));
+            stabilityBadgeSpan.innerText = stabilityText;
+            setProgress(18);
+
+            // 2. Download with live needle
+            setStatus("Download test (live needle moves)...", true);
+            setProgress(22);
+            finalDownload = await new Promise((resolve, reject) => {
+                measureDownloadLive(signal, 
+                    (instant) => { 
+                        updateLiveSpeed(instant);
+                        let prog = 22 + Math.min(50, (instant / maxSpeed) * 50);
+                        setProgress(Math.min(70, prog));
+                    },
+                    (final) => { resolve(final); }
+                ).catch(reject);
+            });
+            updateLiveSpeed(finalDownload);
+            gaugeSpan.innerText = finalDownload.toFixed(1);
+            setProgress(72);
+
+            // 3. Upload
+            setStatus("Upload speed test...", true);
+            setProgress(75);
+            uploadMbps = await measureUpload(signal, (pct) => {
+                let mapped = 75 + (pct * 0.23);
+                setProgress(Math.min(98, mapped));
+            });
+            uploadSpan.innerText = uploadMbps;
+            setProgress(100);
+            setStatus(`✓ Complete! ↓${finalDownload.toFixed(1)} Mbps ↑${uploadMbps} Mbps | Ping ${latencyAvg}ms | Jitter ${jitterVal}ms | Stability ${stability}%`, false);
+        } catch (err) {
+            if (err.message === 'Aborted' || err.name === 'AbortError') {
+                setStatus("Test cancelled.", false);
+                setProgress(0);
+                setNeedleImmediate(0);
+            } else {
+                setStatus(`❌ Error: ${err.message.slice(0,80)}`, false, true);
+                showError(`Test failed: ${err.message}. Check network/adblocker.`);
+                if(latencyAvg===null) pingSpan.innerText='ERR';
+                if(finalDownload===null) gaugeSpan.innerText='ERR';
+                if(uploadMbps===null) uploadSpan.innerText='ERR';
+                setProgress(0);
+            }
+        } finally {
+            isTesting = false;
+            testBtn.disabled = false;
+            activeAbort = null;
+            if(activeUploadXHR) activeUploadXHR = null;
+        }
+    }
+
+    function onTestClick() {
+        if (isTesting) {
+            if (activeAbort) {
+                activeAbort.abort();
+                abortCurrent();
+                setStatus("Aborting...", false);
+                setProgress(0);
+                isTesting = false;
+                testBtn.disabled = false;
+                setNeedleImmediate(0);
+            }
+            return;
+        }
+        runFullTest();
+    }
+
+    // Initialization
+    function initCanvas() {
+        drawGaugeBackground();
+        drawNeedle(0);
+        currentNeedleDeg = 0;
+        targetNeedleDeg = 0;
+    }
+    window.addEventListener('resize', () => { drawGaugeBackground(); drawNeedle(currentNeedleDeg); });
+    initCanvas();
+    fetchIP();
+    setTimeout(() => { if(!isTesting) runFullTest(); }, 400);
+    testBtn.addEventListener('click', onTestClick);
+</script>
+</body>
+</html>
